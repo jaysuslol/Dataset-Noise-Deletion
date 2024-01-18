@@ -7,20 +7,21 @@ from collections import Counter
 
 def ENN(ts, k):
     csvfile = pd.read_csv(os.getcwd() + '\\' + ts)
-    df = pd.DataFrame(csvfile)
-    es = csvfile
+    data = np.array(pd.DataFrame(csvfile)) # Collect all datapoints from file
+    es = csvfile.copy()
     esdf = pd.DataFrame(es)
-    rows = len(df) # Assuming there are no missing values
-
     removed = 0 # Number of removed points
+    distances = np.array([]) # Distance of each element with the rest
 
     #print(rows) #debug, prints 150
 
-    for i in range(0, rows):
-        ivalues = df.iloc[i][:]
-        ivalues = np.array(ivalues)
-
-        distances = []
+    i = 0
+    noclass = np.array([x[:-1] for x in data])
+    for p in data:
+        dist = np.sum((p[:-1] - noclass[np.arange(len(data)) != i])**2)**0.5
+        i += 1
+        #print(dist)
+        distances = np.append(distances, [dist, p[-1]])
 
         """
         for j in range(0, rows):
@@ -33,7 +34,7 @@ def ENN(ts, k):
             dist = np.sum((ivalues[:-1] - jvalues[:-1])**2)**0.5 ## [:-1] avoids class names
             #distances.append([dist, jvalues[-1]]) ## jvalues[-1] is the class name
             distances.append(dist)
-        """
+        
         distances = np.array(distances)
         distances = distances.argpartition(k) ## Sort only by 3 smallest
         k_neighbors = distances[:k] ## Find k-neighbours
@@ -56,11 +57,20 @@ def ENN(ts, k):
                 esdf.drop(i, inplace=True)
                 print('Removed point with index ', i)
                 removed += 1     
-            
+        
     ENNfilename = os.path.splitext(ts)[0] + 'ENN.csv'
     esdf.to_csv(ENNfilename, index=False) ## Output: filenameENN.csv
     print('Total removed points: ', removed)
     print('Remaining points: ', rows-removed)
+    """
+        distances = distances.argpartition(k)
+        k_neighbors = distances[:k]
+        majority = data[k_neighbors, -1]
+
+        if (len(majority) != len(set(majority))):
+            count = Counter(majority).most_common(1) ## Count is a dictionary
+            print(count)
+
 
 
 
